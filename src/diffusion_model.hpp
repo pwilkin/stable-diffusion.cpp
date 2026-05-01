@@ -614,6 +614,10 @@ struct LTXAVModel : public DiffusionModel {
         ltxav.free_compute_buffer();
     }
 
+    void set_lazy_load(std::function<bool()> fn) override {
+        ltxav.set_lazy_load(std::move(fn));
+    }
+
     void get_param_tensors(std::map<std::string, ggml_tensor*>& tensors) override {
         ltxav.get_param_tensors(tensors, prefix);
     }

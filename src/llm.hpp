@@ -108,7 +108,7 @@ namespace LLM {
         ggml_tensor* forward(GGMLRunnerContext* ctx, ggml_tensor* x) {
             ggml_tensor* w = params["weight"];
             if (ctx->weight_adapter) {
-                w = ctx->weight_adapter->patch_weight(ctx->ggml_ctx, w, prefix + "weight");
+                w = ctx->weight_adapter->patch_weight(ctx->ggml_ctx, ctx->backend, w, prefix + "weight");
             }
             x           = ggml_rms_norm(ctx->ggml_ctx, x, eps);
             auto scaled = ggml_mul(ctx->ggml_ctx, x, w);

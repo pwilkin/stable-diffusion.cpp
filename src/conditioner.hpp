@@ -2078,6 +2078,10 @@ struct LTXAVEmbedder : public Conditioner {
         projector->get_param_tensors(tensors, "text_embedding_projection");
     }
 
+    void set_llm_lazy_load(std::function<bool()> fn) override {
+        if (llm) llm->set_lazy_load(std::move(fn));
+    }
+
     void alloc_params_buffer() override {
         llm->alloc_params_buffer();
         projector->alloc_params_buffer();

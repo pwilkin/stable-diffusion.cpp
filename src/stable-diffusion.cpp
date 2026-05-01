@@ -999,10 +999,12 @@ public:
                                                               version,
                                                               sd_ctx_params->chroma_use_dit_mask);
             } else if (sd_version_is_ltxav(version)) {
+                prime_cond_spec();
                 cond_stage_model = std::make_shared<LTXAVEmbedder>(clip_backend,
                                                                    offload_params_to_cpu,
                                                                    tensor_storage_map);
-                diffusion_model  = std::make_shared<LTXAVModel>(backend,
+                prime_dit_spec();
+                diffusion_model  = std::make_shared<LTXAVModel>(diffusion_backend,
                                                                offload_params_to_cpu,
                                                                tensor_storage_map,
                                                                "model.diffusion_model");
