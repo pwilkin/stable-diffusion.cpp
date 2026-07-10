@@ -576,8 +576,11 @@ int main(int argc, const char* argv[]) {
     SDContextParams ctx_params;
     SDGenerationParams gen_params;
 
-    parse_args(argc, argv, cli_params, ctx_params, gen_params);
+    // Install the log callback before parsing: --hf-* options resolve (and
+    // possibly download) models during parse_args, and their errors would
+    // otherwise be dropped.
     sd_set_log_callback(sd_log_cb, (void*)&cli_params);
+    parse_args(argc, argv, cli_params, ctx_params, gen_params);
     log_verbose = cli_params.verbose;
     log_color   = cli_params.color;
 

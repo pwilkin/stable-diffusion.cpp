@@ -25,6 +25,9 @@
 #include "media_io.h"
 #include "resource_owners.hpp"
 
+#include "hf_cache.h"
+#include "hf_download.h"
+
 using json   = nlohmann::json;
 namespace fs = std::filesystem;
 
@@ -335,69 +338,139 @@ ArgOptions SDContextParams::get_options() {
          0,
          &model_path},
         {"",
+         "--hf-model",
+         "HuggingFace cache model reference (repo_id or repo_id:pattern) for full model",
+         0,
+         &hf_model},
+        {"",
          "--clip_l",
          "path to the clip-l text encoder",
          0,
          &clip_l_path},
+        {"",
+         "--hf-clip-l",
+         "HuggingFace cache model reference for clip-l text encoder",
+         0,
+         &hf_clip_l},
         {"", "--clip_g",
          "path to the clip-g text encoder",
          0,
          &clip_g_path},
+        {"",
+         "--hf-clip-g",
+         "HuggingFace cache model reference for clip-g text encoder",
+         0,
+         &hf_clip_g},
         {"",
          "--clip_vision",
          "path to the clip-vision encoder",
          0,
          &clip_vision_path},
         {"",
+         "--hf-clip-vision",
+         "HuggingFace cache model reference for clip-vision encoder",
+         0,
+         &hf_clip_vision},
+        {"",
          "--t5xxl",
          "path to the t5xxl text encoder",
          0,
          &t5xxl_path},
+        {"",
+         "--hf-t5xxl",
+         "HuggingFace cache model reference for t5xxl text encoder",
+         0,
+         &hf_t5xxl},
         {"",
          "--llm",
          "path to the llm text encoder. For example: (qwenvl2.5 for qwen-image, mistral-small3.2 for flux2, ...)",
          0,
          &llm_path},
         {"",
+         "--hf-llm",
+         "HuggingFace cache model reference for llm text encoder",
+         0,
+         &hf_llm},
+        {"",
          "--llm_vision",
          "path to the llm vit",
          0,
          &llm_vision_path},
+        {"",
+         "--hf-llm-vision",
+         "HuggingFace cache model reference for llm vit",
+         0,
+         &hf_llm_vision},
         {"",
          "--qwen2vl",
          "alias of --llm. Deprecated.",
          0,
          &llm_path},
         {"",
+         "--hf-qwen2vl",
+         "alias of --hf-llm. Deprecated.",
+         0,
+         &hf_llm},
+        {"",
          "--qwen2vl_vision",
          "alias of --llm_vision. Deprecated.",
          0,
          &llm_vision_path},
+        {"",
+         "--hf-qwen2vl-vision",
+         "alias of --hf-llm-vision. Deprecated.",
+         0,
+         &hf_llm_vision},
         {"",
          "--diffusion-model",
          "path to the standalone diffusion model",
          0,
          &diffusion_model_path},
         {"",
+         "--hf-diffusion-model",
+         "HuggingFace cache model reference for standalone diffusion model",
+         0,
+         &hf_diffusion_model},
+        {"",
          "--high-noise-diffusion-model",
          "path to the standalone high noise diffusion model",
          0,
          &high_noise_diffusion_model_path},
+        {"",
+         "--hf-high-noise-diffusion-model",
+         "HuggingFace cache model reference for high noise diffusion model",
+         0,
+         &hf_high_noise_diffusion_model},
         {"",
          "--uncond-diffusion-model",
          "path to the standalone unconditional diffusion model, currently used by Ideogram4 CFG",
          0,
          &uncond_diffusion_model_path},
         {"",
+         "--hf-uncond-diffusion-model",
+         "HuggingFace cache model reference for unconditional diffusion model",
+         0,
+         &hf_uncond_diffusion_model},
+        {"",
          "--embeddings-connectors",
          "path to LTXAV embeddings connectors",
          0,
          &embeddings_connectors_path},
         {"",
+         "--hf-embeddings-connectors",
+         "HuggingFace cache model reference for LTXAV embeddings connectors",
+         0,
+         &hf_embeddings_connectors},
+        {"",
          "--vae",
          "path to standalone vae model",
          0,
          &vae_path},
+        {"",
+         "--hf-vae",
+         "HuggingFace cache model reference for standalone vae model",
+         0,
+         &hf_vae},
         {"",
          "--vae-format",
          "VAE latent format override: auto, flux, sd3, or flux2 (default: auto)",
@@ -409,20 +482,40 @@ ArgOptions SDContextParams::get_options() {
          0,
          &audio_vae_path},
         {"",
+         "--hf-audio-vae",
+         "HuggingFace cache model reference for LTX audio vae model",
+         0,
+         &hf_audio_vae},
+        {"",
          "--taesd",
          "path to taesd. Using Tiny AutoEncoder for fast decoding (low quality)",
          0,
          &taesd_path},
+        {"",
+         "--hf-taesd",
+         "HuggingFace cache model reference for taesd",
+         0,
+         &hf_taesd},
         {"",
          "--tae",
          "alias of --taesd",
          0,
          &taesd_path},
         {"",
+         "--hf-tae",
+         "alias of --hf-taesd",
+         0,
+         &hf_taesd},
+        {"",
          "--control-net",
          "path to control net model",
          0,
          &control_net_path},
+        {"",
+         "--hf-control-net",
+         "HuggingFace cache model reference for control net model",
+         0,
+         &hf_control_net},
         {"",
          "--embd-dir",
          "embeddings directory",
@@ -455,15 +548,35 @@ ArgOptions SDContextParams::get_options() {
          0,
          &photo_maker_path},
         {"",
+         "--hf-photo-maker",
+         "HuggingFace cache model reference for PHOTOMAKER model",
+         0,
+         &hf_photo_maker},
+        {"",
          "--pulid-weights",
          "path to PuLID Flux weights",
          0,
          &pulid_weights_path},
         {"",
+         "--hf-pulid-weights",
+         "HuggingFace cache model reference for PuLID Flux weights",
+         0,
+         &hf_pulid_weights},
+        {"",
          "--upscale-model",
          "path to esrgan model.",
          0,
          &esrgan_path},
+        {"",
+         "--hf-upscale-model",
+         "HuggingFace cache model reference for esrgan model",
+         0,
+         &hf_esrgan},
+        {"",
+         "--hf-token",
+         "HuggingFace API token for accessing gated/private repos (overrides HF_TOKEN env var)",
+         0,
+         &hf_token},
         {"",
          "--backend",
          "runtime backend assignment, e.g. cpu or clip=cpu,vae=cuda0,diffusion=vulkan0",
@@ -748,9 +861,53 @@ bool SDContextParams::resolve_and_validate(SDMode mode) {
     if (!resolve(mode)) {
         return false;
     }
+    if (!resolve_hf_paths()) {
+        return false;
+    }
     if (!validate(mode)) {
         return false;
     }
+    return true;
+}
+
+bool SDContextParams::resolve_hf_paths() {
+    auto resolve_one = [this](const std::string& hf_ref, std::string& path_out) -> bool {
+        if (hf_ref.empty()) {
+            return true;
+        }
+        if (!path_out.empty()) {
+            LOG_WARN("both --hf-* and direct path are set for the same model; using direct path");
+            return true;
+        }
+        std::string resolved = hf_download::resolve_or_download(hf_ref, nullptr, hf_token);
+        if (resolved.empty()) {
+            LOG_ERROR("error: failed to resolve HuggingFace cache reference '%s'", hf_ref.c_str());
+            return false;
+        }
+        path_out = resolved;
+        LOG_INFO("resolved HuggingFace cache reference '%s' -> '%s'", hf_ref.c_str(), path_out.c_str());
+        return true;
+    };
+
+    if (!resolve_one(hf_model, model_path)) return false;
+    if (!resolve_one(hf_clip_l, clip_l_path)) return false;
+    if (!resolve_one(hf_clip_g, clip_g_path)) return false;
+    if (!resolve_one(hf_clip_vision, clip_vision_path)) return false;
+    if (!resolve_one(hf_t5xxl, t5xxl_path)) return false;
+    if (!resolve_one(hf_llm, llm_path)) return false;
+    if (!resolve_one(hf_llm_vision, llm_vision_path)) return false;
+    if (!resolve_one(hf_diffusion_model, diffusion_model_path)) return false;
+    if (!resolve_one(hf_high_noise_diffusion_model, high_noise_diffusion_model_path)) return false;
+    if (!resolve_one(hf_uncond_diffusion_model, uncond_diffusion_model_path)) return false;
+    if (!resolve_one(hf_embeddings_connectors, embeddings_connectors_path)) return false;
+    if (!resolve_one(hf_vae, vae_path)) return false;
+    if (!resolve_one(hf_audio_vae, audio_vae_path)) return false;
+    if (!resolve_one(hf_taesd, taesd_path)) return false;
+    if (!resolve_one(hf_control_net, control_net_path)) return false;
+    if (!resolve_one(hf_photo_maker, photo_maker_path)) return false;
+    if (!resolve_one(hf_pulid_weights, pulid_weights_path)) return false;
+    if (!resolve_one(hf_esrgan, esrgan_path)) return false;
+
     return true;
 }
 
@@ -790,22 +947,38 @@ std::string SDContextParams::to_string() const {
     oss << "SDContextParams {\n"
         << "  n_threads: " << n_threads << ",\n"
         << "  model_path: \"" << model_path << "\",\n"
+        << "  hf_model: \"" << hf_model << "\",\n"
         << "  clip_l_path: \"" << clip_l_path << "\",\n"
+        << "  hf_clip_l: \"" << hf_clip_l << "\",\n"
         << "  clip_g_path: \"" << clip_g_path << "\",\n"
+        << "  hf_clip_g: \"" << hf_clip_g << "\",\n"
         << "  clip_vision_path: \"" << clip_vision_path << "\",\n"
+        << "  hf_clip_vision: \"" << hf_clip_vision << "\",\n"
         << "  t5xxl_path: \"" << t5xxl_path << "\",\n"
+        << "  hf_t5xxl: \"" << hf_t5xxl << "\",\n"
         << "  llm_path: \"" << llm_path << "\",\n"
+        << "  hf_llm: \"" << hf_llm << "\",\n"
         << "  llm_vision_path: \"" << llm_vision_path << "\",\n"
+        << "  hf_llm_vision: \"" << hf_llm_vision << "\",\n"
         << "  diffusion_model_path: \"" << diffusion_model_path << "\",\n"
+        << "  hf_diffusion_model: \"" << hf_diffusion_model << "\",\n"
         << "  high_noise_diffusion_model_path: \"" << high_noise_diffusion_model_path << "\",\n"
+        << "  hf_high_noise_diffusion_model: \"" << hf_high_noise_diffusion_model << "\",\n"
         << "  uncond_diffusion_model_path: \"" << uncond_diffusion_model_path << "\",\n"
+        << "  hf_uncond_diffusion_model: \"" << hf_uncond_diffusion_model << "\",\n"
         << "  embeddings_connectors_path: \"" << embeddings_connectors_path << "\",\n"
+        << "  hf_embeddings_connectors: \"" << hf_embeddings_connectors << "\",\n"
         << "  vae_path: \"" << vae_path << "\",\n"
+        << "  hf_vae: \"" << hf_vae << "\",\n"
         << "  vae_format: \"" << vae_format << "\",\n"
         << "  audio_vae_path: \"" << audio_vae_path << "\",\n"
+        << "  hf_audio_vae: \"" << hf_audio_vae << "\",\n"
         << "  taesd_path: \"" << taesd_path << "\",\n"
+        << "  hf_taesd: \"" << hf_taesd << "\",\n"
         << "  esrgan_path: \"" << esrgan_path << "\",\n"
+        << "  hf_esrgan: \"" << hf_esrgan << "\",\n"
         << "  control_net_path: \"" << control_net_path << "\",\n"
+        << "  hf_control_net: \"" << hf_control_net << "\",\n"
         << "  embedding_dir: \"" << embedding_dir << "\",\n"
         << "  embeddings: " << embeddings_str << "\n"
         << "  wtype: " << sd_type_name(wtype) << ",\n"
@@ -813,6 +986,9 @@ std::string SDContextParams::to_string() const {
         << "  lora_model_dir: \"" << lora_model_dir << "\",\n"
         << "  hires_upscalers_dir: \"" << hires_upscalers_dir << "\",\n"
         << "  photo_maker_path: \"" << photo_maker_path << "\",\n"
+        << "  hf_photo_maker: \"" << hf_photo_maker << "\",\n"
+        << "  pulid_weights_path: \"" << pulid_weights_path << "\",\n"
+        << "  hf_pulid_weights: \"" << hf_pulid_weights << "\",\n"
         << "  rng_type: " << sd_rng_type_name(rng_type) << ",\n"
         << "  sampler_rng_type: " << sd_rng_type_name(sampler_rng_type) << ",\n"
         << "  offload_params_to_cpu: " << (offload_params_to_cpu ? "true" : "false") << ",\n"

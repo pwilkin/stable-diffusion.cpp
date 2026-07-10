@@ -331,6 +331,15 @@ endif()
 
 add_subdirectory(thirdparty)
 
+# Find OpenSSL for HTTPS downloads via httplib
+find_package(OpenSSL QUIET)
+if(OPENSSL_FOUND)
+    target_compile_definitions(${SD_LIB} PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
+    target_link_libraries(${SD_LIB} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+else()
+    message(WARNING "OpenSSL not found: HuggingFace Hub downloads (--hf-* options) require HTTPS and will not work; only local HF cache resolution will be available.")
+endif()
+
 target_sources(${SD_LIB} PRIVATE $<TARGET_OBJECTS:zip>)
 target_link_libraries(${SD_LIB} PUBLIC ggml)
 target_include_directories(${SD_LIB} PUBLIC . src include)
