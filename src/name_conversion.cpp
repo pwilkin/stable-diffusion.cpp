@@ -1460,6 +1460,7 @@ std::string convert_tensor_name(std::string name, SDVersion version) {
         {"unet.", "model.diffusion_model."},
         {"transformer.", "model.diffusion_model."},  // dit
         {"vae.", "first_stage_model."},
+        {"text_encoders.llm.text_embedding_projection.", "text_embedding_projection."},
         {"text_encoder.", "cond_stage_model.transformer."},
         {"te.", "cond_stage_model.transformer."},
         {"text_encoder.2.", "cond_stage_model.1.transformer."},
