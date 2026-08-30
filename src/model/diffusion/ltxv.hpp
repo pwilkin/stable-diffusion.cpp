@@ -891,8 +891,7 @@ namespace LTXV {
                          const String2TensorStorage& tensor_storage_map = {},
                          const std::string prefix                       = "") override {
             if (num_learnable_registers > 0) {
-                ggml_type wtype               = get_type(prefix + "learnable_registers", tensor_storage_map, GGML_TYPE_F32);
-                params["learnable_registers"] = ggml_new_tensor_2d(ctx, wtype, hidden_size, num_learnable_registers);
+                params["learnable_registers"] = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, hidden_size, num_learnable_registers);
             }
         }
 
@@ -934,14 +933,7 @@ namespace LTXV {
                 return hidden_states;
             }
 
-            // Quantized LTX checkpoints may keep the registers at the checkpoint's own type (F16 in
-            // the LTX 2.5 GGUFs), while the connector input is always F32.
-            auto regs_param = params["learnable_registers"];
-            if (regs_param->type != hidden_states->type && hidden_states->type == GGML_TYPE_F32) {
-                regs_param = ggml_ext_cast_f32(ctx->ggml_ctx, ctx->backend, regs_param);
-            }
-
-            auto regs = ggml_reshape_3d(ctx->ggml_ctx, regs_param, hidden_size, num_learnable_registers, 1);
+            auto regs = ggml_reshape_3d(ctx->ggml_ctx, params["learnable_registers"], hidden_size, num_learnable_registers, 1);
             auto temp = ggml_new_tensor_3d(ctx->ggml_ctx, regs->type, regs->ne[0], regs->ne[1], hidden_states->ne[2]);
             regs      = ggml_repeat(ctx->ggml_ctx, regs, temp);
 
