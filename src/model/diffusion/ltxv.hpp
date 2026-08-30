@@ -129,9 +129,9 @@ namespace LTXV {
         bool self_attention_gated  = false;
         bool cross_attention_gated = false;
 
-        bool ff_bias                          = true;
-        bool audio_ff_bias                    = true;
-        bool use_keyframes_abs_pos_embedding  = false;
+        bool ff_bias                         = true;
+        bool audio_ff_bias                   = true;
+        bool use_keyframes_abs_pos_embedding = false;
 
         static std::pair<int64_t, int64_t> infer_attention_layout(int64_t hidden_size,
                                                                   int64_t preferred_heads = -1) {
@@ -1340,9 +1340,9 @@ namespace LTXV {
                                                                    2);
             if (config.use_keyframes_abs_pos_embedding) {
                 params["keyframes_abs_pos_embedding"] = ggml_new_tensor_2d(ctx,
-                                                                          get_type(prefix + "keyframes_abs_pos_embedding", tensor_storage_map, GGML_TYPE_F32),
-                                                                          config.hidden_size,
-                                                                          1);
+                                                                           get_type(prefix + "keyframes_abs_pos_embedding", tensor_storage_map, GGML_TYPE_F32),
+                                                                           config.hidden_size,
+                                                                           1);
             }
         }
 

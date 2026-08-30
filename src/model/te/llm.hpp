@@ -116,23 +116,20 @@ namespace LLM {
         std::vector<float> rope_thetas  = {1000000.f};
         std::vector<float> rope_scales  = {1.f};
         std::vector<int> sliding_attention;
-        // Gemma 4 gives its full-attention layers a wider head, a single KV head, a partially
-        // rotated RoPE, and reuses K as V there; sliding layers keep head_dim/num_kv_heads.
-        int global_head_dim            = 0;
-        int num_global_kv_heads        = 0;
-        float global_partial_rotary    = 1.f;
-        bool global_k_eq_v             = false;
-        bool v_norm                    = false;
-        bool layer_scalar              = false;
-        bool unscaled_attention        = false;
         int64_t num_experts         = 0;
         int64_t num_experts_per_tok = 0;
         LLMVisionConfig vision;
         bool have_vision_weight = false;
         bool llama_cpp_style    = false;
-        // Gemma checkpoints converted from a llama.cpp GGUF land on the block names the GGUF map
-        // produces; a Hugging Face checkpoint keeps transformers' own names for the same norms.
-        bool hf_layer_norm_names = false;
+
+        // gemma4 config
+        int global_head_dim         = 0;
+        int num_global_kv_heads     = 0;
+        float global_partial_rotary = 1.f;
+        bool global_k_eq_v          = false;
+        bool v_norm                 = false;
+        bool layer_scalar           = false;
+        bool unscaled_attention     = false;
 
         static LLMConfig detect_from_weights(const String2TensorStorage& tensor_storage_map,
                                              const std::string& prefix,
@@ -299,9 +296,6 @@ namespace LLM {
                 }
                 if (ends_with(name, "layers.0.mlp.experts.gate_proj.weight")) {
                     config.intermediate_size = tensor_storage.ne[1];
-                }
-                if (contains(name, "layers.0.pre_feedforward_layernorm.weight")) {
-                    config.hf_layer_norm_names = true;
                 }
             }
             if ((arch == LLMArch::QWEN3 || arch == LLMArch::QWEN3_VL) && config.num_layers == 28) {
@@ -1173,8 +1167,8 @@ namespace LLM {
             auto v_proj     = k_eq_v ? nullptr : std::dynamic_pointer_cast<Linear>(blocks["v_proj"]);
             auto out_proj   = std::dynamic_pointer_cast<Linear>(blocks["o_proj"]);
 
-            auto q = q_proj->forward(ctx, x);            // [N, n_token, num_heads*head_dim]
-            auto k = k_proj->forward(ctx, x);            // [N, n_token, num_kv_heads*head_dim]
+            auto q = q_proj->forward(ctx, x);               // [N, n_token, num_heads*head_dim]
+            auto k = k_proj->forward(ctx, x);               // [N, n_token, num_kv_heads*head_dim]
             auto v = k_eq_v ? k : v_proj->forward(ctx, x);  // [N, n_token, num_kv_heads*head_dim]
 
             q = ggml_reshape_4d(ctx->ggml_ctx, q, head_dim, num_heads, n_token, N);     // [N, n_token, num_heads, head_dim]
@@ -1263,34 +1257,34 @@ namespace LLM {
                                                  32.f,
                                                  1.f);
             } else if (arch == LLMArch::GEMMA4_12B) {
-                float rope_theta   = (rope_index == 1 ? 10000.0f : 1000000.0f);
-                auto freq_factors  = rope_freq_factors(ctx->ggml_ctx);
-                q                  = ggml_rope_ext(ctx->ggml_ctx,
-                                                   q,
-                                                   input_pos,
-                                                   freq_factors,
-                                                   head_dim,
-                                                   GGML_ROPE_TYPE_NEOX,
-                                                   static_cast<int>(max_position_embeddings),
-                                                   rope_theta,
-                                                   1.f,
-                                                   0.f,
-                                                   1.f,
-                                                   32.f,
-                                                   1.f);
-                k                  = ggml_rope_ext(ctx->ggml_ctx,
-                                                   k,
-                                                   input_pos,
-                                                   freq_factors,
-                                                   head_dim,
-                                                   GGML_ROPE_TYPE_NEOX,
-                                                   static_cast<int>(max_position_embeddings),
-                                                   rope_theta,
-                                                   1.f,
-                                                   0.f,
-                                                   1.f,
-                                                   32.f,
-                                                   1.f);
+                float rope_theta  = (rope_index == 1 ? 10000.0f : 1000000.0f);
+                auto freq_factors = rope_freq_factors(ctx->ggml_ctx);
+                q                 = ggml_rope_ext(ctx->ggml_ctx,
+                                                  q,
+                                                  input_pos,
+                                                  freq_factors,
+                                                  head_dim,
+                                                  GGML_ROPE_TYPE_NEOX,
+                                                  static_cast<int>(max_position_embeddings),
+                                                  rope_theta,
+                                                  1.f,
+                                                  0.f,
+                                                  1.f,
+                                                  32.f,
+                                                  1.f);
+                k                 = ggml_rope_ext(ctx->ggml_ctx,
+                                                  k,
+                                                  input_pos,
+                                                  freq_factors,
+                                                  head_dim,
+                                                  GGML_ROPE_TYPE_NEOX,
+                                                  static_cast<int>(max_position_embeddings),
+                                                  rope_theta,
+                                                  1.f,
+                                                  0.f,
+                                                  1.f,
+                                                  32.f,
+                                                  1.f);
             } else if (arch == LLMArch::GEMMA2_2B) {
                 q = ggml_rope_ext(ctx->ggml_ctx,
                                   q,
@@ -1390,7 +1384,7 @@ namespace LLM {
             : arch(config.arch),
               sliding_attention(0),
               has_layer_scalar(config.layer_scalar) {
-            if (config.arch == LLMArch::GEMMA4_12B && config.hf_layer_norm_names) {
+            if (config.arch == LLMArch::GEMMA4_12B) {
                 post_attention_norm_name = "post_attention_layernorm";
                 pre_ffw_norm_name        = "pre_feedforward_layernorm";
                 post_ffw_norm_name       = "post_feedforward_layernorm";
