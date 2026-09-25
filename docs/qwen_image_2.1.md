@@ -30,6 +30,10 @@ Run the following commands from the build directory. Use image dimensions divisi
 
 To use GGUF diffusion weights, set `--diffusion-model` to the path of a file such as `qwen_image_2.1-Q4_K.gguf`.
 
+For ROCm generation, use `--diffusion-fa`. If VAE working memory is limiting, `--vae-conv-direct` is also available. It can change output pixels, so benchmark it separately before using it for speed.
+
+On gfx1151, an experimental CK Tile attention path can be enabled at build time with `-DGGML_HIP_CK_TILE_FMHA=ON` when ROCm CK Tile headers are installed. It handles unmasked Qwen Image 2.1 attention with 576–6400 query tokens in multiples of 16. Full generations were benchmarked at square sizes from 384×384 through 1152×1152 in 128-pixel increments, at 1280×1280, and at 768×1024; other eligible shapes use the same kernel but have not all been benchmarked. Shapes outside that query-token range use the existing flash-attention kernels. The CK Tile path changes generated pixels for the same seed, so leave it disabled when reproducing an existing image.
+
 ### Image editing
 
 Pass the reference image with `-r` and describe the edit in `-p`. Vision weights are required; the example below loads them separately with `--llm_vision`.
